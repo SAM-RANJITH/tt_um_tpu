@@ -1,73 +1,52 @@
+`timescale 1ns/1ps
 `default_nettype none
-`timescale 1ns / 1ps
 
-module tb ();
+module tb;
 
-  // Dump waveform
-  initial begin
-    $dumpfile("tb.fst");
-    $dumpvars(0, tb);
-  end
+reg clk=0;
+always #5 clk=~clk;
 
-  // Inputs
-  reg clk = 0;
-  reg rst_n = 0;
-  reg ena = 1;
-  reg [7:0] ui_in = 0;
-  reg [7:0] uio_in = 0;
+reg rst_n=0, ena=1;
+reg [7:0] ui_in=0, uio_in=0;
 
-  // Outputs
-  wire [7:0] uo_out;
-  wire [7:0] uio_out;
-  wire [7:0] uio_oe;
+wire [7:0] uo_out;
+wire [7:0] uio_out;
 
-`ifdef GL_TEST
-  wire VPWR = 1'b1;
-  wire VGND = 1'b0;
-`endif
+tt_um_braun_tpu dut(.*);
 
-  // Clock generation
-  always #5 clk = ~clk;
+task write(input [7:0] d);
+begin
+  @(posedge clk); ui_in<=d; uio_in<=1;   // WE=1
+  @(posedge clk); uio_in<=0;
+end
+endtask
 
-  // DUT
-  tt_um_gpr_processor  user_project (
+initial begin
+  $dumpfile("wave.vcd");
+  $dumpvars(0,tb);
 
-`ifdef GL_TEST
-      .VPWR(VPWR),
-      .VGND(VGND),
-`endif
+  repeat(5) @(posedge clk);
+  rst_n=1;
 
-      .ui_in  (ui_in),
-      .uo_out (uo_out),
-      .uio_in (uio_in),
-      .uio_out(uio_out),
-      .uio_oe (uio_oe),
-      .ena    (ena),
-      .clk    (clk),
-      .rst_n  (rst_n)
-  );
+  // load A
+  write(2); write(3); write(4); write(5);
 
-  // Test sequence
-  initial begin
+  // load B
+  write(1); write(2); write(3); write(4);
 
-    // Reset
-    #20;
-    rst_n = 1;
+  // start
+  @(posedge clk);
+  uio_in <= 8'b00000010; // start
+  @(posedge clk);
+  uio_in <= 0;
 
-    // Example stimulus
-    ui_in = 8'hAA;
-    #20;
+  // wait for done
+  wait(uio_out[0] == 1);
 
-    ui_in = 8'h55;
-    #20;
+  $display("Result = %0d", uo_out);
 
-    ui_in = 8'hFF;
-    #20;
-
-    // End simulation
-    #100;
-    $finish;
-
-  end
+  #20;
+  $finish;
+end
 
 endmodule
