@@ -1,6 +1,6 @@
 # Tiny Tapeout project information
 project:
-  title:        " Tensor Processing Unit"      # Project title
+  title:        " Tensor Processing Unit(TPU)"      # Project title
   author:       "Sam Ranjith "      # Your name
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "multiplies matrices"      # One line description of what your project does
